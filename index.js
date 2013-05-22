@@ -95,13 +95,13 @@ function platform(opts, app, version) {
 	// don't bother if neither are specified
 	if(!opts.devicePath && !opts.deviceHost) {
 
-		return this.log.info("platform: No device specified");
+		return this.log.info("ninja-arduino: No device specified");
 	}
 	else {
 
 		if(!this.createStream()) {
 
-			this.log.error("platform: Error creating device stream");
+			this.log.error("ninja-arduino: Error creating device stream");
 		}
 	}
 
@@ -214,7 +214,7 @@ platform.prototype.setArduinoVersionToDownload = function(version) {
 
 platform.prototype.flashArduino = function() {
 	var params = '-f ' + this.arduinoVersionToDownload;
-	this.log.info('platform: setting params, \'' + params + '\'');
+	this.log.info('ninja-arduino: setting params, \'' + params + '\'');
 	self = this;
     fs.writeFile(kArduinoParamsFile, params, function(err) { //write params to file
    		if(err) {
@@ -223,7 +223,7 @@ platform.prototype.flashArduino = function() {
 			fs.unlink(kArduinoUpdatedFile, function (err) { //delete file to trigger update on next run
   			if (err) {
 			} else {
-				self.log.info('platform: flashing arduino...' + this.arduinoVersionToDownload);
+				self.log.info('ninja-arduino: flashing arduino...' + this.arduinoVersionToDownload);
 				process.exit(); //restart so /etc/init/ninjablock.conf can run
 			}
 			});
@@ -251,12 +251,13 @@ platform.prototype.registerDevice = function(deviceG, deviceV, deviceD) {
 	return device;
 }
 
-platform.prototype.sendData = function(dat) {
-	if(!dat) { return; }
-	var device = this.registeredDevices[guid(dat)];
+platform.prototype.sendData = function(deviceObj) {
+	if(!deviceObj) { return; }
+	var device = this.registeredDevices[guid(deviceObj)];
 	if (!device) {
-		device = this.registerDevice(dat.G, dat.V, dat.D);
+		device = this.registerDevice(deviceObj.G, deviceObj.V, deviceObj.D);
 	}
+	device.emit('data',deviceObj.DA);
 };
 
 platform.prototype.sendConfig = function(type, dat) {
