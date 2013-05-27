@@ -237,7 +237,11 @@ function guid(device) {
 }
 
 platform.prototype.registerDevice = function(deviceG, deviceV, deviceD) {
+
 	var device = new platformDevice(deviceG, deviceV, deviceD);
+	// If we already have a device for this guid, bail.
+	if (this.registeredDevices[guid(device)]) return;
+
 	device.write = function(DA) {
 		this.onCommand.call(this,{
 			G:device.G,
@@ -246,6 +250,7 @@ platform.prototype.registerDevice = function(deviceG, deviceV, deviceD) {
 			DA:DA
 		});
 	}.bind(this);
+
 	this.emit('register', device);
 	this.registeredDevices[guid(device)] = device;
 	return device;
