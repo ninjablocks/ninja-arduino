@@ -31,10 +31,6 @@ function platform(opts, app, version) {
 	var str = undefined
 	var mod = this
 
-	// We now need to use app.opts as we
-	// now call this driver like all other drivers
-	opts = app.opts
-
 	//version to flash. Set by config.
 	this.arduinoVersionToDownload = "V12"; //default to most common hardware
 
@@ -49,7 +45,7 @@ function platform(opts, app, version) {
 	stream.call(this);
 	this.app = app;
 	this.log = app.log;
-	this._config = opts || { };
+	this.opts = opts || { };
 	this.queue = [ ];
 	this.device = undefined;
 	this.channel = undefined;
@@ -90,18 +86,18 @@ function platform(opts, app, version) {
 	];
 
 
-	if((!opts.devicePath) && opts.env == "production") {
+	if((!app.opts.devicePath) && app.opts.env == "production") {
 
-		this.opts.devicePath = "/dev/ttyO1";
+		this.app.opts.devicePath = "/dev/ttyO1";
 	}
 	// don't bother if neither are specified
-	if(!opts.devicePath && !opts.deviceHost) {
+	if(!app.opts.devicePath && !app.opts.deviceHost) {
 
 		return this.log.info("ninja-arduino: No device specified");
 	}
 	else {
 
-		if(!this.createStream()) {
+		if(!this.createStream(this.app.opts)) {
 
 			this.log.error("ninja-arduino: Error creating device stream");
 		}
@@ -186,7 +182,7 @@ platform.prototype.config = function(rpc,cb) {
 
 
 platform.prototype.restorePersistantDevices = function() {
-	var persistantDevices = this._config.persistantDevices;
+	var persistantDevices = this.opts.persistantDevices;
 
 
 	if (!persistantDevices) {
