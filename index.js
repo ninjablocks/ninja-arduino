@@ -28,10 +28,12 @@ const kArduinoUpdatedFile = "/etc/opt/ninja/.has_updated_arduino";
  */
 function platform(opts, app, version) {
 
-	var
-		str = undefined
-		, mod = this
-	;
+	var str = undefined
+	var mod = this
+
+	// We now need to use app.opts as we
+	// now call this driver like all other drivers
+	opts = app.opts
 
 	//version to flash. Set by config.
 	this.arduinoVersionToDownload = "V12"; //default to most common hardware
@@ -47,7 +49,7 @@ function platform(opts, app, version) {
 	stream.call(this);
 	this.app = app;
 	this.log = app.log;
-	this.opts = opts || { };
+	this._config = opts || { };
 	this.queue = [ ];
 	this.device = undefined;
 	this.channel = undefined;
@@ -184,7 +186,7 @@ platform.prototype.config = function(rpc,cb) {
 
 
 platform.prototype.restorePersistantDevices = function() {
-	var persistantDevices = this.opts.persistantDevices;
+	var persistantDevices = this._config.persistantDevices;
 
 
 	if (!persistantDevices) {
