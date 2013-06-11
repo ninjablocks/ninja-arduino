@@ -182,7 +182,7 @@ platform.prototype.config = function(rpc,cb) {
 
 
 platform.prototype.restorePersistantDevices = function() {
-	var persistantDevices = this._config.persistantDevices;
+	var persistantDevices = this.opts.persistantDevices;
 
 
 	if (!persistantDevices) {
