@@ -1,7 +1,7 @@
 {
-  "name": "platform",
-  "version": "0.0.1",
-  "description": "ninja blocks arduino driver",
+  "name": "ninja-arduino",
+  "version": "0.1.0",
+  "description": "Driver handling communication to the Ninja Blocks arduino cape.",
   "main": "index.js",
   "repository": "",
   "author": "Ninja Blocks <support@ninjablocks.com>",
@@ -12,10 +12,10 @@
     },
     {
       "name": "Daniel Friedman",
-       "email" : "dan@ninjablocks.com"
+       "email" : "daniel@ninjablocks.com"
     }
   ],
-  "license": "BSD",
+  "license": "MIT",
   "dependencies": {
     "serialport": "git://github.com/ninjablocks/node-serialport.git",
     "through": "~2.2.6"
