@@ -19,5 +19,12 @@
   "dependencies": {
     "serialport": "git://github.com/ninjablocks/node-serialport.git",
     "through": "~2.2.6"
-  }
+  },
+  "widgets": [
+    "https://gist.github.com/jmanoto/6f0228ba3ae8832397e5",
+    "https://gist.github.com/jmanoto/6f0228ba3ae8832397e5",
+    "https://gist.github.com/jmanoto/f176748828ddd9fee05e",
+    "https://gist.github.com/jmanoto/f4f07351f3d77dfe4430",
+    "https://gist.github.com/jmanoto/8c1be02b56acdfd8ca06"
+  ]
 }
