@@ -12,13 +12,14 @@
     },
     {
       "name": "Daniel Friedman",
-       "email" : "dan@ninjablocks.com"
+      "email": "dan@ninjablocks.com"
     }
   ],
   "license": "BSD",
   "dependencies": {
     "serialport": "git://github.com/ninjablocks/node-serialport.git",
-    "through": "~2.2.6"
+    "through": "~2.2.6",
+    "request": "~2.22.0"
   },
   "widgets": [
     "https://gist.github.com/jmanoto/6f0228ba3ae8832397e5",
