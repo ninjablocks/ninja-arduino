@@ -31,9 +31,6 @@ function platform(opts, app, version) {
 	var str = undefined
 	var mod = this
 
-	//version to flash. Set by config.
-	this.arduinoVersionToDownload = "V12"; //default to most common hardware
-
 	this.retry = {
 
 		delay : 3000
@@ -165,18 +162,15 @@ deviceStream(platform);
 metaEvents(platform);
 
 platform.prototype.config = function(rpc,cb) {
-
   var self = this;
-
   if (!rpc) {
-    return configHandlers.probe.call(this,cb);
+    return configHandlers.menu.call(this,cb);
   }
-
-  switch (rpc.method) {
-    case 'manual_board_version':   return configHandlers.manual_board_version.call(this,rpc.params,cb); break;
-    case 'confirm_flash_arduino':  return configHandlers.confirm_flash_arduino.call(this,rpc.params,cb); break;
-    case 'flashduino_begin':  return configHandlers.flashduino_begin.call(this,rpc.params,cb); break;
-    default:               return cb(true);                                              break;
+  else if (typeof configHandlers[rpc.method] === "function") {
+    return configHandlers[rpc.method].call(this,rpc.params,cb);
+  }
+  else {
+    return cb(true);
   }
 };
 
@@ -207,21 +201,33 @@ platform.prototype.restorePersistantDevices = function() {
 }
 
 platform.prototype.setArduinoVersionToDownload = function(version) {
+	this.arduinoCustomHexURLToDownload = "";
 	this.arduinoVersionToDownload = version;
+}
+platform.prototype.setArduinoHexURLToDownload = function(hexURL) {
+	this.arduinoVersionToDownload = "";
+	this.arduinoCustomHexURLToDownload = hexURL;
 }
 
 platform.prototype.flashArduino = function() {
-	var params = '-f ' + this.arduinoVersionToDownload;
+	var params;
+	if (this.arduinoVersionToDownload !== "") {
+		params = '-f ' + this.arduinoVersionToDownload;
+	} else if (this.arduinoCustomHexURLToDownload !== "") {
+		params = '-u ' + this.arduinoCustomHexURLToDownload;
+	} else {
+		return;
+	}
 	this.log.info('ninja-arduino: setting params, \'' + params + '\'');
 	self = this;
-    fs.writeFile(kArduinoParamsFile, params, function(err) { //write params to file
+	fs.writeFile(kArduinoParamsFile, params, function(err) { //write params to file
    		if(err) {
-        	console.log(err);
-    	} else {
+        		console.log(err);
+    		} else {
 			fs.unlink(kArduinoUpdatedFile, function (err) { //delete file to trigger update on next run
   			if (err) {
 			} else {
-				self.log.info('ninja-arduino: flashing arduino...' + this.arduinoVersionToDownload);
+				self.log.info('ninja-arduino: flashing arduino...');
 				process.exit(); //restart so /etc/init/ninjablock.conf can run
 			}
 			});
