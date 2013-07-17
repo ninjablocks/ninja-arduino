@@ -225,11 +225,8 @@ platform.prototype.flashArduino = function() {
         		console.log(err);
     		} else {
 			fs.unlink(kArduinoUpdatedFile, function (err) { //delete file to trigger update on next run
-  			if (err) {
-			} else {
 				self.log.info('ninja-arduino: flashing arduino...');
 				process.exit(); //restart so /etc/init/ninjablock.conf can run
-			}
 			});
 		}
 	});
