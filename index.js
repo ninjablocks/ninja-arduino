@@ -221,6 +221,14 @@ platform.prototype.setArduinoHexURLToDownload = function(hexURL) {
 
 platform.prototype.requestFlashArduino = function() {
 	this.log.info('ninja-arduino: flash arduino requested');
+	this.device.write(JSON.stringify({
+		DEVICE : [{
+				G : "0"
+				, V : 0
+				, D : 999
+				, DA : "FFFFFF" 
+			}]
+	}));
 	this.flashStatus = this.FlashStatusType.REQUESTED;
 	this.closeSerialStream();
 }
@@ -234,14 +242,6 @@ platform.prototype.flashArduino = function() {
 		this.flashStatus = this.FlashStatusType.NONE;
 		return;
 	}
-	this.device.write(JSON.stringify({
-		DEVICE : [{
-				G : "0"
-				, V : 0
-				, D : 999
-				, DA : "FFFFFF" 
-			}]
-	}));
 	this.log.info('ninja-arduino: flashing using params, \'' + params + '\'');
 
 	//flash here
