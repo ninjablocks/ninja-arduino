@@ -2,19 +2,18 @@
  * Ninja Blocks arduino controller
  */
 
-var
-	serialport = require('serialport')
-	, stream = require('stream')
-	, util = require('util')
-	, path = require('path')
-	, net = require('net')
-	, fs = require('fs')
-	, metaEvents = require('./lib/meta-events.js')
-	, deviceStream = require('./lib/device-stream.js')
-	, platformDevice = require('./lib/platform-device.js')
-	, deviceHandlers = require('./lib/handlers.js')
-	, configHandlers = require('./lib/config')
-;
+var serialport = require('serialport');
+var stream = require('stream');
+var util = require('util');
+var path = require('path');
+var net = require('net');
+var fs = require('fs');
+var metaEvents = require('./lib/meta-events.js');
+var deviceStream = require('./lib/device-stream.js');
+var platformDevice = require('./lib/platform-device.js');
+var deviceHandlers = require('./lib/handlers.js');
+var configHandlers = require('./lib/config');
+var spawn = require('child_process').spawn;
 
 const kUtilBinPath = "/opt/utilities/bin/";
 const kArduinoFlashScript = "ninja_upate_arduino";
@@ -46,6 +45,14 @@ function platform(opts, app, version) {
 	this.queue = [ ];
 	this.device = undefined;
 	this.channel = undefined;
+	this.FlashStatusType = {
+		NONE : 0
+		, REQUESTED : 1
+		, FLASHING : 2
+	}
+	this.flashStatus = this.FlashStatusType.NONE;
+	this.flashScriptPath = "/opt/utilities/bin/ninja_update_arduino"
+	this.flashScriptProcess = undefined;
 	this.debounce = [ ];
 
 	this.registeredDevices = [ ];
@@ -53,12 +60,12 @@ function platform(opts, app, version) {
 	this.statusLights = [
 
 		{
-			state : "client::up"
-			, color : "00FF00"
-		}
-		, {
 			state : "client::down"
 			, color : "FFFF00"
+		}
+		, {
+			state : "client::up"
+			, color : "00FF00"
 		}
 		, {
 			state : "client::authed"
@@ -81,7 +88,8 @@ function platform(opts, app, version) {
 			, color : "FFFFFF"
 		}
 	];
-
+	// assume down
+	this.currentStatus = this.statusLights[0];
 
 	if((!app.opts.devicePath) && app.opts.env == "production") {
 
@@ -105,29 +113,17 @@ function platform(opts, app, version) {
 	 * make the status LED do its thing
 	 */
 	this.statusLights.forEach(function(state) {
-
 		app.on(state.state, function() {
-
-			if(!mod.device) { return; }
-			mod.device.write(JSON.stringify({
-				DEVICE : [
-					{
-						G : "0"
-						, V : 0
-						, D : 999
-						, DA : state.color
-					}
-				]
-			}));
-		});
-	});
+			this.currentStatus = state;
+			this.updateLEDWithStatus();
+		}.bind(this));
+	}.bind(this));
 
 	/**
 	 * Get version from arduino
 	 */
 	function getVersion() {
-
-		if(!mod.device) { return; }
+		if (!mod.device || (mod.flashStatus != mod.FlashStatusType.NONE)) { return; }
 		mod.device.write('{"DEVICE":[{"G":"0","V":0,"D":1003,"DA":"VNO"}]}');
 	};
 
@@ -160,6 +156,20 @@ util.inherits(platform, stream);
 deviceHandlers(platform);
 deviceStream(platform);
 metaEvents(platform);
+
+platform.prototype.updateLEDWithStatus = function() {
+	if(!this.device || (this.flashStatus != this.FlashStatusType.NONE)) { return; }
+	this.device.write(JSON.stringify({
+		DEVICE : [
+			{
+				G : "0"
+				, V : 0
+				, D : 999
+				, DA : this.currentStatus.color
+			}
+		]
+	}));
+}
 
 platform.prototype.config = function(rpc,cb) {
   var self = this;
@@ -209,17 +219,37 @@ platform.prototype.setArduinoHexURLToDownload = function(hexURL) {
 	this.arduinoCustomHexURLToDownload = hexURL;
 }
 
+platform.prototype.requestFlashArduino = function() {
+	this.log.info('ninja-arduino: flash arduino requested');
+	this.flashStatus = this.FlashStatusType.REQUESTED;
+	this.closeSerialStream();
+}
 platform.prototype.flashArduino = function() {
 	var params;
 	if (this.arduinoVersionToDownload !== "") {
-		params = '-f ' + this.arduinoVersionToDownload;
+		params = ['-f', this.arduinoVersionToDownload];
 	} else if (this.arduinoCustomHexURLToDownload !== "") {
-		params = '-u ' + this.arduinoCustomHexURLToDownload;
+		params = ['-u', this.arduinoCustomHexURLToDownload];
 	} else {
+		this.flashStatus = this.FlashStatusType.NONE;
 		return;
 	}
-	this.log.info('ninja-arduino: setting params, \'' + params + '\'');
+	this.device.write(JSON.stringify({
+		DEVICE : [{
+				G : "0"
+				, V : 0
+				, D : 999
+				, DA : "FFFFFF" 
+			}]
+	}));
+	this.log.info('ninja-arduino: flashing using params, \'' + params + '\'');
+
+	//flash here
+	this.flashStatus = this.FlashStatusType.FLASHING;
+	this.flashProcess = spawn(this.flashScriptPath, params);
+	this.flashProcess.on('close', this.finishedFlashing.bind(this));
 	self = this;
+/*
 	fs.writeFile(kArduinoParamsFile, params, function(err) { //write params to file
    		if(err) {
         		console.log(err);
@@ -229,9 +259,13 @@ platform.prototype.flashArduino = function() {
 				process.exit(); //restart so /etc/init/ninjablock.conf can run
 			});
 		}
-	});
+	});*/
 }
-
+platform.prototype.finishedFlashing = function(code) {
+	this.log.info('ninja-arduino: finished flashing (' + code + ')');
+	this.flashStatus = this.FlashStatusType.NONE;
+	this.createStream();
+}
 
 function guid(device) {
 	return [device.G,device.V,device.D].join('_');
