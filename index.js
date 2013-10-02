@@ -54,6 +54,10 @@ function platform(opts, app, version) {
 	this.flashScriptPath = "/opt/utilities/bin/ninja_update_arduino"
 	this.flashScriptProcess = undefined;
 	this.debounce = [ ];
+	
+	if ( process.env.NINJA_HARDWARE_TYPE == "RPI" ) {
+		this.flashScriptPath = "/opt/ninjablocks/bin/ninja_update_arduino";
+	}
 
 	this.registeredDevices = [ ];
 
