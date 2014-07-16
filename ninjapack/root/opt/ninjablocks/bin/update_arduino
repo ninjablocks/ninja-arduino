@@ -1,0 +1,108 @@
+#!/bin/bash
+
+source /etc/ninja-hardware
+AVRDUDE_CONF="/etc/avrdude.conf"
+
+printUsage() {
+  echo -e "Usage: 
+  $script_name
+  $script_name <file.hex>
+  $script_name -u <url>
+  eg. $script_name -u https://github.com/ninjablocks/arduino/raw/master/hex/v12_0.46.hex\n" 
+}
+
+detectBeagleCape() {
+  detect_file="/sys/class/gpio/gpio${NINJA_CAPE_DETECT_GPIO}"
+
+  if [[ -f ${detect_file} ]]; then
+      detect_value=`cat ${detect_file}`
+      if [[ ${detect_file} -eq 0 ]]; then
+        NINJA_CAPE="black"
+      else
+        NINJA_CAPE="white"
+      fi
+  else
+      echo "Detect file not found: ${detect_file}"
+  fi
+}
+
+
+
+flashArduino() {
+  echo "[update_arduino] `date` Arduino update script started"
+
+  for i in 1 2 3 4
+  do
+    echo "[update_arduino] Flashing Arduino, pass $i"
+    echo "1" > /sys/class/gpio/gpio${NINJA_RESETGPIO}/value
+    sleep 1
+    echo "0" > /sys/class/gpio/gpio${NINJA_RESETGPIO}/value
+    avrdude -C ${AVRDUDE_CONF} -p atmega328p -c arduino -P /dev/${ARDUINO_TTY} -b 57600 -D -U flash:w:$1:i
+
+    if [[ "$?" -eq 0 ]]; then
+      echo "1" > /sys/class/gpio/gpio${NINJA_RESETGPIO}/value
+      echo "[update_arduino] Successfully flashed Arduino on pass $i."
+      exit 0
+    else
+      echo "[update_arduino] Pass $i failed."
+    fi
+
+  done
+
+  echo "[update_arduino] Flashing Arduino failed."
+  exit 1
+}
+
+checkURL() {
+  HTTPcode=$(curl -s -o /dev/null -I -w "%{http_code}" $1)
+  if [ "$HTTPcode" != "200" ]
+  then
+    echo "[update_arduino] Arduino Update Failed. Could not fetch binary ($1)"
+    exitFail
+  fi
+}
+
+
+downloadHex() {
+checkURL $1
+curl --output `basename $1` $url
+}
+
+
+
+##########################################################################################
+
+
+if [[ $# -gt 2 ]]; then
+    printUsage
+    echo "Wrong number of arguments"
+    exit 1
+fi
+
+if [[ $# -eq 1 ]]; then  #flash with given hexfile
+  hex_file=$1
+
+  if [[ ! -f $hex_file ]]; then
+    echo "Hex file, ${hex_file}, not found"
+    exit 1
+  fi
+
+fi
+
+
+if [[ $# = "-u" ]]; then  #flash with URL
+  URL=$1
+  hex_file=`basename $URL`
+  downloadHex $URL
+fi
+
+if [[ -z $hex_file ]]; then # if you get here, wrong params set
+  printUsage
+  exit 1
+fi
+
+
+
+flashArduino ${hex_file}
+
+
