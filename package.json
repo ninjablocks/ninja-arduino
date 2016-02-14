@@ -1,6 +1,6 @@
 {
   "name": "ninja-arduino",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Driver handling communication to the Ninja Blocks arduino cape.",
   "main": "index.js",
   "repository": "",
@@ -17,7 +17,10 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "serialport": "git://github.com/ninjablocks/node-serialport.git",
+    "serialport": "~2.0.6",
     "through": "~2.2.6"
+  },
+  "engines": {
+    "node": ">=0.10.0"
   }
 }
