@@ -17,10 +17,10 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "serialport": "~2.0.6",
+    "serialport": "^6.0.0",
     "through": "~2.2.6"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=6.0.0"
   }
 }
